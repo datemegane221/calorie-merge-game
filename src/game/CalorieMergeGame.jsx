@@ -312,14 +312,25 @@ export default function CalorieMergeGame() {
     setTimeout(() => { canDropRef.current = true; }, DROP_COOLDOWN_MS);
   }, [spawnFood, setQueuedStage]);
 
+  // After a real touchstart, mobile Safari (and others) also fires a
+  // synthetic mousedown a bit later for the same tap. Both are bound below,
+  // so without this guard a single tap drops two pieces - one from each event.
+  const lastTouchDropAtRef = useRef(0);
+
   const handlePointerMove = (e) => {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     updateDropX(clientX);
   };
 
-  const handlePointerDown = (e) => {
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    updateDropX(clientX);
+  const handleTouchStart = (e) => {
+    lastTouchDropAtRef.current = Date.now();
+    updateDropX(e.touches[0].clientX);
+    doDrop();
+  };
+
+  const handleMouseDown = (e) => {
+    if (Date.now() - lastTouchDropAtRef.current < 800) return;
+    updateDropX(e.clientX);
     doDrop();
   };
 
@@ -440,9 +451,9 @@ export default function CalorieMergeGame() {
             height={FIELD.height}
             style={{ width: "100%", height: "auto", display: "block", borderRadius: 10, touchAction: "none", cursor: gameOver ? "default" : "pointer" }}
             onMouseMove={handlePointerMove}
-            onMouseDown={handlePointerDown}
+            onMouseDown={handleMouseDown}
             onTouchMove={handlePointerMove}
-            onTouchStart={handlePointerDown}
+            onTouchStart={handleTouchStart}
           />
 
           {legendBanner && (
