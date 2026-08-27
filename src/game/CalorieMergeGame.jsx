@@ -12,6 +12,9 @@ const GAME_OVER_GRACE_MS = 2000;
 const SPAWN_GRACE_MS = 900;
 const DROP_COOLDOWN_MS = 350;
 const RICE_PRESS_BONUS = 200; // 〆のライス
+// stage photos are square with padding around the dish, so zoom in past the
+// circle's diameter to crop that padding out instead of showing a ring of white
+const IMAGE_ZOOM = 1.4;
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
@@ -29,6 +32,18 @@ export default function CalorieMergeGame() {
   const mergeQueueRef = useRef([]);
   const bodySeqRef = useRef(1);
   const gameOverRef = useRef(false);
+  const imageCacheRef = useRef({});
+
+  // preload each stage's photo once; drawFoodAt falls back to the emoji
+  // until (or unless) the image for that stage has finished loading
+  useEffect(() => {
+    for (const stage of FOOD_STAGES) {
+      if (!stage.image || imageCacheRef.current[stage.id]) continue;
+      const img = new Image();
+      img.src = stage.image;
+      imageCacheRef.current[stage.id] = img;
+    }
+  }, []);
 
   const [score, setScore] = useState(0);
   const [highestStageId, setHighestStageId] = useState(1);
@@ -204,29 +219,62 @@ export default function CalorieMergeGame() {
     };
 
     const drawFoodAt = (ctx, stage, x, y) => {
+      const img = stage.image && imageCacheRef.current[stage.id];
+      const imgReady = !!(img && img.complete && img.naturalWidth > 0);
+
       ctx.save();
       ctx.beginPath();
       ctx.arc(x, y, stage.radius, 0, Math.PI * 2);
-      ctx.fillStyle = stage.color;
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "rgba(0,0,0,0.12)";
-      ctx.stroke();
 
-      ctx.font = `${Math.round(stage.radius * 1.05)}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(stage.emoji, x, y - (stage.id >= 8 ? stage.radius * 0.12 : 0));
+      if (imgReady) {
+        ctx.save();
+        ctx.clip();
+        const size = stage.radius * 2 * IMAGE_ZOOM;
+        ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+        ctx.restore();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(0,0,0,0.12)";
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = stage.color;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(0,0,0,0.12)";
+        ctx.stroke();
+
+        ctx.font = `${Math.round(stage.radius * 1.05)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(stage.emoji, x, y - (stage.id >= 8 ? stage.radius * 0.12 : 0));
+      }
 
       if (stage.badge) {
-        ctx.font = `${Math.round(stage.radius * 0.55)}px sans-serif`;
-        ctx.fillText(stage.badge, x + stage.radius * 0.55, y - stage.radius * 0.55);
+        const bx = x + stage.radius * 0.55;
+        const by = y - stage.radius * 0.55;
+        ctx.beginPath();
+        ctx.arc(bx, by, stage.radius * 0.32, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        ctx.fill();
+        ctx.font = `${Math.round(stage.radius * 0.5)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(stage.badge, bx, by);
       }
 
       if (stage.id >= 8) {
+        const labelY = y + stage.radius * 0.62;
         ctx.font = "10px system-ui, sans-serif";
-        ctx.fillStyle = "#3A3527";
-        ctx.fillText(stage.name, x, y + stage.radius * 0.62);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        if (imgReady) {
+          const textWidth = ctx.measureText(stage.name).width;
+          ctx.fillStyle = "rgba(0,0,0,0.55)";
+          ctx.fillRect(x - textWidth / 2 - 4, labelY - 7, textWidth + 8, 14);
+          ctx.fillStyle = "#FFFFFF";
+        } else {
+          ctx.fillStyle = "#3A3527";
+        }
+        ctx.fillText(stage.name, x, labelY);
       }
       ctx.restore();
     };
@@ -325,7 +373,13 @@ export default function CalorieMergeGame() {
           </div>
           <div style={{ background: "white", border: "1px solid #E3DFD1", borderRadius: 10, padding: "8px 16px", display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ fontSize: 11, color: "#8A8578" }}>NEXT</div>
-            <div style={{ fontSize: 24 }}>{stageById(nextStageId).emoji}</div>
+            {stageById(nextStageId).image ? (
+              <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden" }}>
+                <img src={stageById(nextStageId).image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${IMAGE_ZOOM})` }} />
+              </div>
+            ) : (
+              <div style={{ fontSize: 24 }}>{stageById(nextStageId).emoji}</div>
+            )}
           </div>
           {legendReached && (
             <button onClick={pressRice}
@@ -358,9 +412,11 @@ export default function CalorieMergeGame() {
                   <div style={{
                     width: 40, height: 40, borderRadius: "50%", background: stage.color,
                     display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
-                    border: "1px solid rgba(0,0,0,0.12)", flexShrink: 0,
+                    border: "1px solid rgba(0,0,0,0.12)", flexShrink: 0, overflow: "hidden",
                   }}>
-                    {stage.emoji}
+                    {stage.image
+                      ? <img src={stage.image} alt={stage.name} style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${IMAGE_ZOOM})` }} />
+                      : stage.emoji}
                   </div>
                   <div style={{ fontSize: 9.5, color: "#6B5744", textAlign: "center", lineHeight: 1.2 }}>
                     {stage.name}
