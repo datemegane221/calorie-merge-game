@@ -26,7 +26,10 @@ export default function CalorieMergeGame() {
   const worldRef = useRef(null);
   const runningRef = useRef(false);
   const dropXRef = useRef(FIELD.width / 2);
-  const nextStageIdRef = useRef(randomDropStageId());
+  // currentStageIdRef: the piece sitting at the drop point right now (what falls on tap).
+  // queuedStageIdRef/queuedStageId: the piece after that, shown in the NEXT badge.
+  const currentStageIdRef = useRef(randomDropStageId());
+  const queuedStageIdRef = useRef(randomDropStageId());
   const canDropRef = useRef(true);
   const dangerSinceRef = useRef(null);
   const mergeQueueRef = useRef([]);
@@ -47,7 +50,7 @@ export default function CalorieMergeGame() {
 
   const [score, setScore] = useState(0);
   const [highestStageId, setHighestStageId] = useState(1);
-  const [nextStageId, setNextStageId] = useState(nextStageIdRef.current);
+  const [queuedStageId, setQueuedStageId] = useState(queuedStageIdRef.current);
   const [gameOver, setGameOver] = useState(false);
   const [legendReached, setLegendReached] = useState(false);
   const [legendBanner, setLegendBanner] = useState(false);
@@ -55,9 +58,9 @@ export default function CalorieMergeGame() {
   const [resetTick, setResetTick] = useState(0);
   const [showGuide, setShowGuide] = useState(false);
 
-  const setNextStage = useCallback((id) => {
-    nextStageIdRef.current = id;
-    setNextStageId(id);
+  const setQueuedStage = useCallback((id) => {
+    queuedStageIdRef.current = id;
+    setQueuedStageId(id);
   }, []);
 
   const spawnFood = useCallback((stageId, x, y) => {
@@ -196,7 +199,7 @@ export default function CalorieMergeGame() {
 
       // drop preview
       if (runningRef.current && !gameOverRef.current) {
-        const previewStage = stageById(nextStageIdRef.current);
+        const previewStage = stageById(currentStageIdRef.current);
         ctx.save();
         ctx.globalAlpha = 0.85;
         drawFoodAt(ctx, previewStage, dropXRef.current, DROP_Y);
@@ -294,18 +297,20 @@ export default function CalorieMergeGame() {
     const rect = canvas.getBoundingClientRect();
     const scale = FIELD.width / rect.width;
     const x = (clientX - rect.left) * scale;
-    const radius = stageById(nextStageIdRef.current).radius;
+    const radius = stageById(currentStageIdRef.current).radius;
     dropXRef.current = clamp(x, FIELD.wallThickness + radius, FIELD.width - FIELD.wallThickness - radius);
   }, []);
 
   const doDrop = useCallback(() => {
     if (gameOverRef.current || !canDropRef.current) return;
     canDropRef.current = false;
-    const stageId = nextStageIdRef.current;
+    const stageId = currentStageIdRef.current;
     spawnFood(stageId, dropXRef.current, DROP_Y);
-    setNextStage(randomDropStageId());
+    // the queued piece becomes current; draw a fresh one into the queue
+    currentStageIdRef.current = queuedStageIdRef.current;
+    setQueuedStage(randomDropStageId());
     setTimeout(() => { canDropRef.current = true; }, DROP_COOLDOWN_MS);
-  }, [spawnFood, setNextStage]);
+  }, [spawnFood, setQueuedStage]);
 
   const handlePointerMove = (e) => {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -325,7 +330,8 @@ export default function CalorieMergeGame() {
     setLegendBanner(false);
     setGameOver(false);
     canDropRef.current = true;
-    setNextStage(randomDropStageId());
+    currentStageIdRef.current = randomDropStageId();
+    setQueuedStage(randomDropStageId());
     setResetTick((t) => t + 1);
   };
 
@@ -360,14 +366,14 @@ export default function CalorieMergeGame() {
           </div>
           <div style={{ background: "white", border: "1px solid #E3DFD1", borderRadius: 10, padding: "8px 16px", display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ fontSize: 11, color: "#8A8578" }}>NEXT</div>
-            {stageById(nextStageId).image ? (
+            {stageById(queuedStageId).image ? (
               <div style={{
                 width: 28, height: 28, borderRadius: "50%",
-                backgroundImage: `url(${stageById(nextStageId).image})`,
+                backgroundImage: `url(${stageById(queuedStageId).image})`,
                 backgroundSize: `${IMAGE_ZOOM * 100}%`, backgroundPosition: "center", backgroundRepeat: "no-repeat",
               }} />
             ) : (
-              <div style={{ fontSize: 24 }}>{stageById(nextStageId).emoji}</div>
+              <div style={{ fontSize: 24 }}>{stageById(queuedStageId).emoji}</div>
             )}
           </div>
           {legendReached && (
