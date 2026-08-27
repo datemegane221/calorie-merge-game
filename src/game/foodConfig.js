@@ -20,11 +20,11 @@ export const FOOD_STAGES = [
   // あえてここで一度カロリーが下がる(コミカルな演出)
   { id: 8, name: "ラーメン", emoji: "🍜", calories: 700, radius: 68, color: "#E3B23C" },
   // 進化演出: 画面が揺れる、急激にサイズアップ
-  { id: 9, name: "二郎系ラーメン", emoji: "🍜", image: jiroRamenImg, badge: "💥", calories: 1500, radius: 80, color: "#D9772E", shakeOnSpawn: true },
-  { id: 10, name: "二郎系マシマシ", emoji: "🍜", image: jiroMashimashiImg, badge: "🧄", calories: 2500, radius: 90, color: "#2D4A3E" },
-  { id: 11, name: "二郎系アブラカラメマシマシ全部増し", emoji: "🍜", image: jiroAburaKarameZenbuMashiImg, badge: "🔥", calories: 3500, radius: 100, color: "#993C1D" },
+  { id: 9, name: "二郎系ラーメン", emoji: "🍜", image: jiroRamenImg, calories: 1500, radius: 80, color: "#D9772E", shakeOnSpawn: true },
+  { id: 10, name: "二郎系マシマシ", emoji: "🍜", image: jiroMashimashiImg, calories: 2500, radius: 90, color: "#2D4A3E" },
+  { id: 11, name: "二郎系アブラカラメマシマシ全部増し", emoji: "🍜", image: jiroAburaKarameZenbuMashiImg, calories: 3500, radius: 100, color: "#993C1D" },
   // 最終形態。実質1日の摂取カロリー相当として表示するための値(合体はここで終わり)
-  { id: 12, name: "伝説の二郎", emoji: "🍜", image: densetsuNoJiroImg, badge: "👑", calories: 2200, radius: 112, color: "#D9AF3C", isFinal: true },
+  { id: 12, name: "伝説の二郎", emoji: "🍜", image: densetsuNoJiroImg, calories: 2200, radius: 112, color: "#D9AF3C", isFinal: true },
 ];
 
 export const MAX_STAGE_ID = FOOD_STAGES[FOOD_STAGES.length - 1].id;

@@ -4,7 +4,7 @@ import { FOOD_STAGES, MAX_STAGE_ID, DAILY_CALORIE_REFERENCE, stageById, randomDr
 
 const FIELD = { width: 400, height: 600, wallThickness: 14 };
 const DROP_Y = 64;
-const GAME_OVER_LINE_Y = 160;
+const GAME_OVER_LINE_Y = 110;
 const GAME_OVER_GRACE_MS = 2000;
 // newly spawned/merged bodies are ignored by the game-over check for a beat,
 // so a piece still free-falling through the drop zone (low speed right after
@@ -248,19 +248,6 @@ export default function CalorieMergeGame() {
         ctx.fillText(stage.emoji, x, y - (stage.id >= 8 ? stage.radius * 0.12 : 0));
       }
 
-      if (stage.badge) {
-        const bx = x + stage.radius * 0.55;
-        const by = y - stage.radius * 0.55;
-        ctx.beginPath();
-        ctx.arc(bx, by, stage.radius * 0.32, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        ctx.fill();
-        ctx.font = `${Math.round(stage.radius * 0.5)}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(stage.badge, bx, by);
-      }
-
       if (stage.id >= 8) {
         const labelY = y + stage.radius * 0.62;
         ctx.font = "10px system-ui, sans-serif";
@@ -374,9 +361,11 @@ export default function CalorieMergeGame() {
           <div style={{ background: "white", border: "1px solid #E3DFD1", borderRadius: 10, padding: "8px 16px", display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ fontSize: 11, color: "#8A8578" }}>NEXT</div>
             {stageById(nextStageId).image ? (
-              <div style={{ width: 28, height: 28, borderRadius: "50%", overflow: "hidden" }}>
-                <img src={stageById(nextStageId).image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${IMAGE_ZOOM})` }} />
-              </div>
+              <div style={{
+                width: 28, height: 28, borderRadius: "50%",
+                backgroundImage: `url(${stageById(nextStageId).image})`,
+                backgroundSize: `${IMAGE_ZOOM * 100}%`, backgroundPosition: "center", backgroundRepeat: "no-repeat",
+              }} />
             ) : (
               <div style={{ fontSize: 24 }}>{stageById(nextStageId).emoji}</div>
             )}
@@ -410,13 +399,15 @@ export default function CalorieMergeGame() {
               <div key={stage.id} style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: 58 }}>
                   <div style={{
-                    width: 40, height: 40, borderRadius: "50%", background: stage.color,
+                    width: 40, height: 40, borderRadius: "50%",
+                    background: stage.image ? `url(${stage.image})` : stage.color,
+                    backgroundSize: stage.image ? `${IMAGE_ZOOM * 100}%` : undefined,
+                    backgroundPosition: stage.image ? "center" : undefined,
+                    backgroundRepeat: stage.image ? "no-repeat" : undefined,
                     display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
-                    border: "1px solid rgba(0,0,0,0.12)", flexShrink: 0, overflow: "hidden",
+                    border: "1px solid rgba(0,0,0,0.12)", flexShrink: 0,
                   }}>
-                    {stage.image
-                      ? <img src={stage.image} alt={stage.name} style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${IMAGE_ZOOM})` }} />
-                      : stage.emoji}
+                    {!stage.image && stage.emoji}
                   </div>
                   <div style={{ fontSize: 9.5, color: "#6B5744", textAlign: "center", lineHeight: 1.2 }}>
                     {stage.name}
