@@ -2,10 +2,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Matter from "matter-js";
 import { FOOD_STAGES, MAX_STAGE_ID, DAILY_CALORIE_REFERENCE, stageById, randomDropStageId } from "./foodConfig.js";
 
-const FIELD = { width: 320, height: 460, wallThickness: 14 };
-const DROP_Y = 50;
-const GAME_OVER_LINE_Y = 104;
-const GAME_OVER_GRACE_MS = 1500;
+const FIELD = { width: 400, height: 600, wallThickness: 14 };
+const DROP_Y = 64;
+const GAME_OVER_LINE_Y = 160;
+const GAME_OVER_GRACE_MS = 2000;
 // newly spawned/merged bodies are ignored by the game-over check for a beat,
 // so a piece still free-falling through the drop zone (low speed right after
 // spawn, before gravity has ramped it up) doesn't read as "at rest" above the line
@@ -38,6 +38,7 @@ export default function CalorieMergeGame() {
   const [legendBanner, setLegendBanner] = useState(false);
   const [shake, setShake] = useState(false);
   const [resetTick, setResetTick] = useState(0);
+  const [showGuide, setShowGuide] = useState(false);
 
   const setNextStage = useCallback((id) => {
     nextStageIdRef.current = id;
@@ -74,7 +75,7 @@ export default function CalorieMergeGame() {
 
   // Physics + render loop setup. Recreated whenever resetTick changes (retry).
   useEffect(() => {
-    const engine = Matter.Engine.create({ gravity: { x: 0, y: 1.05 } });
+    const engine = Matter.Engine.create({ gravity: { x: 0, y: 0.95 } });
     engineRef.current = engine;
     worldRef.current = engine.world;
 
@@ -335,7 +336,43 @@ export default function CalorieMergeGame() {
               〆のライス (+{RICE_PRESS_BONUS}kcal)
             </button>
           )}
+          <button onClick={() => setShowGuide((v) => !v)}
+            style={{
+              padding: "8px 14px", borderRadius: 10, border: "1px solid #D3CFC1",
+              background: "white", color: "#6B5744", cursor: "pointer", fontSize: 12, fontWeight: 500,
+              marginLeft: "auto",
+            }}>
+            進化表 {showGuide ? "▲" : "▼"}
+          </button>
         </div>
+
+        {showGuide && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6, overflowX: "auto",
+            background: "white", border: "1px solid #E3DFD1", borderRadius: 10,
+            padding: "10px 12px", marginBottom: 12,
+          }}>
+            {FOOD_STAGES.map((stage, i) => (
+              <div key={stage.id} style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: 58 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: "50%", background: stage.color,
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+                    border: "1px solid rgba(0,0,0,0.12)", flexShrink: 0,
+                  }}>
+                    {stage.emoji}
+                  </div>
+                  <div style={{ fontSize: 9.5, color: "#6B5744", textAlign: "center", lineHeight: 1.2 }}>
+                    {stage.name}
+                  </div>
+                </div>
+                {i < FOOD_STAGES.length - 1 && (
+                  <span style={{ color: "#8A8578", fontSize: 16, flexShrink: 0 }}>→</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
 
         <div
           style={{
