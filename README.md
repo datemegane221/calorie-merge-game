@@ -2,7 +2,10 @@
 
 スイカゲーム風の物理マージゲーム。同じ食べ物同士を落として合体させると、より高カロリーな次の食べ物に進化する。最終的に「伝説の二郎」まで到達することを目指す、ネタ寄りの中毒性ゲーム。
 
-React + Vite + Matter.js製。ローカルで動かして遊ぶ用のプロジェクト。
+React + Vite + Matter.js製。
+
+- 公開URL: https://datemegane221.github.io/calorie-merge-game/
+- `main`にpushすると`.github/workflows/deploy.yml`が自動でビルド・GitHub Pagesへデプロイする
 
 ## 遊び方
 
